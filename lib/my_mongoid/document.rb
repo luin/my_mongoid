@@ -3,12 +3,38 @@ module MyMongoid
     @models ||= []
   end
 
+  class Field
+    attr_reader :name
+    def initialize(name)
+      @name = name
+    end
+  end
+
+  class DuplicateFieldError < StandardError
+  end
+
   module Document
     attr_reader :attributes
     module ClassMethods
+      attr_reader :fields
       def is_mongoid_model?
         true
       end
+
+      def field(key)
+        @fields ||= {}
+        if @fields[key.to_s]
+          raise MyMongoid::DuplicateFieldError
+        end
+        @fields[key.to_s] = MyMongoid::Field.new(key.to_s)
+        self.class_eval("def #{key};@attributes['#{key}'];end")
+        self.class_eval("def #{key}=(v);@attributes['#{key}']=v;end")
+      end
+
+      def self.extended(klass)
+        klass.field :_id
+      end
+
     end
 
     def self.included(klass)
@@ -32,6 +58,7 @@ module MyMongoid
     def new_record?
       true
     end
+
 
   end
 end
