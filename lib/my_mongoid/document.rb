@@ -5,8 +5,10 @@ module MyMongoid
 
   class Field
     attr_reader :name
-    def initialize(name)
+    attr_reader :options
+    def initialize(name, options)
       @name = name
+      @options = options
     end
   end
 
@@ -24,18 +26,24 @@ module MyMongoid
         true
       end
 
-      def field(key)
+      def field(key, options = {})
         @fields ||= {}
         if @fields[key.to_s]
           raise MyMongoid::DuplicateFieldError
         end
-        @fields[key.to_s] = MyMongoid::Field.new(key.to_s)
+        @fields[key.to_s] = MyMongoid::Field.new(key.to_s, options)
         self.class_eval("def #{key};@attributes['#{key}'];end")
         self.class_eval("def #{key}=(v);@attributes['#{key}']=v;end")
+        options.each_pair do |k, v|
+          if k == :as
+            self.class_eval("def #{v};@attributes['#{key}'];end")
+            self.class_eval("def #{v}=(v);@attributes['#{key}']=v;end")
+          end
+        end
       end
 
       def self.extended(klass)
-        klass.field :_id
+        klass.field :_id, :as => :id
       end
 
     end
