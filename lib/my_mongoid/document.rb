@@ -13,6 +13,9 @@ module MyMongoid
   class DuplicateFieldError < StandardError
   end
 
+  class UnknownAttributeError < StandardError
+  end
+
   module Document
     attr_reader :attributes
     module ClassMethods
@@ -44,7 +47,8 @@ module MyMongoid
 
     def initialize(attrs = nil)
       raise ArgumentError unless attrs.is_a?(Hash)
-      @attributes = attrs
+      @attributes ||= {}
+      process_attributes(attrs)
     end
 
     def read_attribute(key)
@@ -52,7 +56,18 @@ module MyMongoid
     end
 
     def write_attribute(key, value)
-      @attributes[key] = valus
+      @attributes[key] = value
+    end
+
+    def process_attributes(hash)
+      hash.each_pair do |k,v|
+        raise MyMongoid::UnknownAttributeError unless self.class.fields.include? k.to_s
+        self.send "#{k}=", v
+      end
+    end
+
+    def attributes=(hash)
+      process_attributes(hash)
     end
 
     def new_record?
