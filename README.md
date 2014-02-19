@@ -1,6 +1,6 @@
 # MyMongoid
 
-TODO: Write a gem description
+[![Build Status]](https://travis-ci.org/luin/my_mongoid)
 
 ## Installation
 
