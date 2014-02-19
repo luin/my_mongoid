@@ -1,6 +1,6 @@
 # MyMongoid
 
-[![Build Status]](https://travis-ci.org/luin/my_mongoid)
+[![Build Status](https://travis-ci.org/luin/my_mongoid.png?branch=master)](https://travis-ci.org/luin/my_mongoid)
 
 ## Installation
 
