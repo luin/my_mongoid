@@ -3,12 +3,6 @@ module MyMongoid
     @models ||= []
   end
 
-
-  class DuplicateFieldError < StandardError
-  end
-
-  class UnknownAttributeError < StandardError
-  end
   module Document
     attr_reader :attributes
     module ClassMethods
