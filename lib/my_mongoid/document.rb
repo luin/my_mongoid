@@ -3,21 +3,12 @@ module MyMongoid
     @models ||= []
   end
 
-  class Field
-    attr_reader :name
-    attr_reader :options
-    def initialize(name, options)
-      @name = name
-      @options = options
-    end
-  end
 
   class DuplicateFieldError < StandardError
   end
 
   class UnknownAttributeError < StandardError
   end
-
   module Document
     attr_reader :attributes
     module ClassMethods
