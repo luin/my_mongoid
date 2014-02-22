@@ -7,22 +7,22 @@ module MyMongoid
     attr_reader :attributes
     module ClassMethods
       attr_reader :fields
+      attr_reader :alias
       def is_mongoid_model?
         true
       end
 
       def field(key, options = {})
         @fields ||= {}
+        @alias ||= {}
         if @fields[key.to_s]
           raise MyMongoid::DuplicateFieldError
         end
         @fields[key.to_s] = MyMongoid::Field.new(key.to_s, options)
-        self.class_eval("def #{key};@attributes['#{key}'];end")
-        self.class_eval("def #{key}=(v);@attributes['#{key}']=v;end")
         options.each_pair do |k, v|
           if k == :as
-            self.class_eval("def #{v};@attributes['#{key}'];end")
-            self.class_eval("def #{v}=(v);@attributes['#{key}']=v;end")
+            @alias ||= {}
+            @alias[v] = key
           end
         end
       end
@@ -36,6 +36,21 @@ module MyMongoid
     def self.included(klass)
       MyMongoid.models << klass
       klass.extend ClassMethods
+    end
+
+    def method_missing(m, *args)
+      m.match(/^(.*?)=?$/)
+      if self.class.alias.key? $1
+        field_name = self.class.alias[$1]
+      else
+        field_name = $1
+      end
+      return super unless self.class.fields.key? field_name
+      if m.to_s == field_name
+        @attributes[field_name]
+      else
+        @attributes[field_name] = args[0]
+      end
     end
 
     def initialize(attrs = nil)
