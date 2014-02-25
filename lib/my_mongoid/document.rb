@@ -77,6 +77,10 @@ module MyMongoid
       raise ArgumentError unless attrs.is_a?(Hash)
       @attributes ||= {}
       process_attributes(attrs)
+
+      unless attrs.key?('_id')
+        self._id = BSON::ObjectId.new
+      end
     end
 
     def read_attribute(key)
