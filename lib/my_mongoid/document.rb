@@ -1,3 +1,5 @@
+require "active_support/inflector"
+
 module MyMongoid
   def self.models
     @models ||= []
@@ -31,6 +33,40 @@ module MyMongoid
         klass.field :_id, :as => :id
       end
 
+      def collection_name
+        self.name.tableize
+      end
+
+      def collection
+        # todo
+        MyMongoid.session[collection_name]
+      end
+
+      def create(attrs)
+        new_record = self.new(attrs)
+        new_record.save
+
+        new_record
+      end
+
+      def instantiate(attrs)
+        record = self.new({})
+        attrs.each_pair do |key, value|
+          record.attributes[key] = value
+        end
+        record.instance_variable_set :@is_new_record, false
+
+        record
+      end
+
+      def find(selector)
+        query = selector.is_a?(String) ? {"_id" => selector} : selector
+
+        result = collection.find(query).first
+        raise RecordNotFoundError unless result
+
+        instantiate(result)
+      end
     end
 
     def self.included(klass)
@@ -54,9 +90,15 @@ module MyMongoid
     end
 
     def initialize(attrs = nil)
+      @is_new_record = true
+
       raise ArgumentError unless attrs.is_a?(Hash)
       @attributes ||= {}
       process_attributes(attrs)
+
+      unless attrs.key?('_id')
+        self._id = BSON::ObjectId.new
+      end
     end
 
     def read_attribute(key)
@@ -79,9 +121,19 @@ module MyMongoid
     end
 
     def new_record?
-      true
+      @is_new_record
     end
 
 
+    def to_document
+      @attributes
+    end
+
+    def save
+      # todo
+      self.class.collection.insert(to_document)
+      @is_new_record = false
+      true
+    end
   end
 end
