@@ -3,7 +3,7 @@ describe MyMongoid::Document do
     expect(MyMongoid::Document).to be_a(Module)
   end
 
-  class Event
+  class AnotherEvent
     include MyMongoid::Document
     field :id
     field :public
@@ -14,12 +14,12 @@ describe MyMongoid::Document do
   end
 
   let(:event) do
-    Event.new(attributes)
+    AnotherEvent.new(attributes)
   end
 
   describe ".new" do
     it "should return a new instance" do
-      expect(Event.is_mongoid_model?).to eq(true)
+      expect(AnotherEvent.is_mongoid_model?).to eq(true)
     end
   end
 
@@ -68,6 +68,11 @@ describe MyMongoid::Document do
     it "uses #process_attributes for #initialize" do
       foo = FooModel.new({:number => 10})
       expect(foo.number).to eq(11)
+    end
+
+    it "should support alias" do
+      foo = FooModel.new({:id => 10})
+      expect(foo._id).to eq(10)
     end
   end
 

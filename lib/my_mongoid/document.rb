@@ -24,7 +24,7 @@ module MyMongoid
         options.each_pair do |k, v|
           if k == :as
             @alias ||= {}
-            @alias[v] = key
+            @alias[v.to_s] = key.to_s
           end
         end
       end
@@ -82,7 +82,7 @@ module MyMongoid
         field_name = $1
       end
       return super unless self.class.fields.key? field_name
-      if m.to_s == field_name
+      if m.to_s == $1
         @attributes[field_name]
       else
         @attributes[field_name] = args[0]
@@ -92,26 +92,28 @@ module MyMongoid
     def initialize(attrs = nil)
       @is_new_record = true
 
-      raise ArgumentError unless attrs.is_a?(Hash)
+      raise ArgumentError unless attrs.is_a?(Hash) ||
+                                 self.class.alias.include?(k.to_sym)
       @attributes ||= {}
       process_attributes(attrs)
 
-      unless attrs.key?('_id')
+      unless attrs.key?('_id') || attrs.key?('id') ||
+             attrs.key?(:_id) || attrs.key?(:id)
         self._id = BSON::ObjectId.new
       end
     end
 
     def read_attribute(key)
-      @attributes[key]
+      self.send key
     end
 
     def write_attribute(key, value)
-      @attributes[key] = value
+      self.send "#{key}=", value
     end
 
     def process_attributes(hash)
       hash.each_pair do |k,v|
-        raise MyMongoid::UnknownAttributeError unless self.class.fields.include? k.to_s
+        raise MyMongoid::UnknownAttributeError unless self.class.fields.include?(k.to_s) || self.class.alias.include?(k.to_s)
         self.send "#{k}=", v
       end
     end
