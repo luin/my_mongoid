@@ -24,7 +24,7 @@ module MyMongoid
         options.each_pair do |k, v|
           if k == :as
             @alias ||= {}
-            @alias[v.to_s] = key.to_s
+            @alias[v] = key
           end
         end
       end
@@ -111,7 +111,7 @@ module MyMongoid
 
     def process_attributes(hash)
       hash.each_pair do |k,v|
-        raise MyMongoid::UnknownAttributeError unless self.class.fields.include?(k.to_s) || self.class.alias.include?(k.to_s)
+        raise MyMongoid::UnknownAttributeError unless self.class.fields.include?(k.to_s) || self.class.alias.include?(k.to_sym)
         self.send "#{k}=", v
       end
     end
