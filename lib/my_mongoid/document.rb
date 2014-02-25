@@ -1,3 +1,5 @@
+require "active_support/inflector"
+
 module MyMongoid
   def self.models
     @models ||= []
@@ -31,6 +33,22 @@ module MyMongoid
         klass.field :_id, :as => :id
       end
 
+      def collection_name
+        self.name.tableize
+      end
+
+      def collection
+        # todo
+        MyMongoid.session[collection_name]
+      end
+
+      def create(attrs)
+        new_record = self.new(attrs)
+        new_record.save
+
+        new_record
+      end
+
     end
 
     def self.included(klass)
@@ -54,6 +72,8 @@ module MyMongoid
     end
 
     def initialize(attrs = nil)
+      @is_new_record = true
+
       raise ArgumentError unless attrs.is_a?(Hash)
       @attributes ||= {}
       process_attributes(attrs)
@@ -79,9 +99,19 @@ module MyMongoid
     end
 
     def new_record?
-      true
+      @is_new_record
     end
 
 
+    def to_document
+      @attributes
+    end
+
+    def save
+      # todo
+      self.class.collection.insert(to_document)
+      @is_new_record = false
+      true
+    end
   end
 end
