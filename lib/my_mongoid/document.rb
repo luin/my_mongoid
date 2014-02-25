@@ -49,6 +49,24 @@ module MyMongoid
         new_record
       end
 
+      def instantiate(attrs)
+        record = self.new({})
+        attrs.each_pair do |key, value|
+          record.attributes[key] = value
+        end
+        record.instance_variable_set :@is_new_record, false
+
+        record
+      end
+
+      def find(selector)
+        query = selector.is_a?(String) ? {"_id" => selector} : selector
+
+        result = collection.find(query).first
+        raise RecordNotFoundError unless result
+
+        instantiate(result)
+      end
     end
 
     def self.included(klass)
