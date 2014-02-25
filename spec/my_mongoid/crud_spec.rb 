@@ -123,8 +123,8 @@ describe "Should be able to create a record:" do
 
   describe "Model#save" do
     let(:attrs) {
-      # {"id" => "1", "a" => 10, "b" => 20}
-      {"a" => 10, "b" => 20}
+      {"id" => "1", "a" => 10, "b" => 20}
+      # {"a" => 10, "b" => 20}
     }
 
     let(:event) {
