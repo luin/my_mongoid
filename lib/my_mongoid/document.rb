@@ -189,5 +189,13 @@ module MyMongoid
       process_attributes(attrs)
       update_document
     end
+
+    def delete
+      self.class.collection.find({"_id" => self.id }).remove
+    end
+
+    def deleted?
+      true
+    end
   end
 end
