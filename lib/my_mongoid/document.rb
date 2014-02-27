@@ -46,6 +46,8 @@ module MyMongoid
         new_record = self.new(attrs)
         new_record.save
 
+        new_record.instance_variable_set :@is_changed, false
+
         new_record
       end
 
@@ -55,6 +57,7 @@ module MyMongoid
           record.attributes[key] = value
         end
         record.instance_variable_set :@is_new_record, false
+        record.instance_variable_set :@is_changed, false
 
         record
       end
@@ -88,6 +91,7 @@ module MyMongoid
 
       if field_name != '_id' && @attributes[field_name] != args[0]
         @changed_attributes[field_name] = @attributes[field_name]
+        @is_changed = true
       end
 
       if m.to_s == $1
@@ -143,11 +147,33 @@ module MyMongoid
       # todo
       self.class.collection.insert(to_document)
       @is_new_record = false
+      @changed_attributes = {}
       true
     end
 
     def changed_attributes
       @changed_attributes
+    end
+
+    def changed?
+      @is_changed
+    end
+
+    def atomic_updates
+      if changed? && !new_record?
+        result = {"$set"=>{}}
+        @changed_attributes.each_pair do |key, value|
+          result["$set"][key] = read_attribute(key)
+        end
+
+        result
+      else
+        {}
+      end
+    end
+
+    def update_document
+
     end
   end
 end
