@@ -46,6 +46,8 @@ module MyMongoid
         new_record = self.new(attrs)
         new_record.save
 
+        new_record.instance_variable_set :@is_changed, false
+
         new_record
       end
 
@@ -55,6 +57,7 @@ module MyMongoid
           record.attributes[key] = value
         end
         record.instance_variable_set :@is_new_record, false
+        record.instance_variable_set :@is_changed, false
 
         record
       end
@@ -75,6 +78,8 @@ module MyMongoid
     end
 
     def method_missing(m, *args)
+      @changed_attributes ||= {}
+
       m.match(/^(.*?)=?$/)
       if self.class.alias.key? $1
         field_name = self.class.alias[$1]
@@ -82,6 +87,13 @@ module MyMongoid
         field_name = $1
       end
       return super unless self.class.fields.key? field_name
+
+
+      if field_name != '_id' && @attributes[field_name] != args[0]
+        @changed_attributes[field_name] = @attributes[field_name]
+        @is_changed = true
+      end
+
       if m.to_s == $1
         @attributes[field_name]
       else
@@ -93,12 +105,12 @@ module MyMongoid
       @is_new_record = true
 
       raise ArgumentError unless attrs.is_a?(Hash) ||
-                                 self.class.alias.include?(k.to_sym)
+      self.class.alias.include?(k.to_sym)
       @attributes ||= {}
       process_attributes(attrs)
 
       unless attrs.key?('_id') || attrs.key?('id') ||
-             attrs.key?(:_id) || attrs.key?(:id)
+        attrs.key?(:_id) || attrs.key?(:id)
         self._id = BSON::ObjectId.new
       end
     end
@@ -132,9 +144,57 @@ module MyMongoid
     end
 
     def save
-      # todo
-      self.class.collection.insert(to_document)
-      @is_new_record = false
+      if @is_new_record == true
+        self.class.collection.insert(to_document)
+        @is_new_record = false
+      else
+        update_document
+      end
+
+      @changed_attributes = {}
+      true
+    end
+
+    def changed_attributes
+      @changed_attributes
+    end
+
+    def changed?
+      @is_changed
+    end
+
+    def atomic_updates
+      if changed? && !new_record?
+        result = {"$set"=>{}}
+        @changed_attributes.each_pair do |key, value|
+          result["$set"][key] = read_attribute(key)
+        end
+
+        result
+      else
+        {}
+      end
+    end
+
+    def update_document
+      updates = atomic_updates
+
+      unless updates.empty?
+        selector = { "_id" => self.id }
+        self.class.collection.find(selector).update(updates)
+      end
+    end
+
+    def update_attributes(attrs)
+      process_attributes(attrs)
+      update_document
+    end
+
+    def delete
+      self.class.collection.find({"_id" => self.id }).remove
+    end
+
+    def deleted?
       true
     end
   end
