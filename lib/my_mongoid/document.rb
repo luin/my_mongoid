@@ -144,9 +144,13 @@ module MyMongoid
     end
 
     def save
-      # todo
-      self.class.collection.insert(to_document)
-      @is_new_record = false
+      if @is_new_record == true
+        self.class.collection.insert(to_document)
+        @is_new_record = false
+      else
+        update_document
+      end
+
       @changed_attributes = {}
       true
     end
@@ -173,7 +177,17 @@ module MyMongoid
     end
 
     def update_document
+      updates = atomic_updates
 
+      unless updates.empty?
+        selector = { "_id" => self.id }
+        self.class.collection.find(selector).update(updates)
+      end
+    end
+
+    def update_attributes(attrs)
+      process_attributes(attrs)
+      update_document
     end
   end
 end
