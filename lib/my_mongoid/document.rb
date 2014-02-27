@@ -75,6 +75,8 @@ module MyMongoid
     end
 
     def method_missing(m, *args)
+      @changed_attributes ||= {}
+
       m.match(/^(.*?)=?$/)
       if self.class.alias.key? $1
         field_name = self.class.alias[$1]
@@ -82,6 +84,12 @@ module MyMongoid
         field_name = $1
       end
       return super unless self.class.fields.key? field_name
+
+
+      if field_name != '_id' && @attributes[field_name] != args[0]
+        @changed_attributes[field_name] = @attributes[field_name]
+      end
+
       if m.to_s == $1
         @attributes[field_name]
       else
@@ -93,12 +101,12 @@ module MyMongoid
       @is_new_record = true
 
       raise ArgumentError unless attrs.is_a?(Hash) ||
-                                 self.class.alias.include?(k.to_sym)
+      self.class.alias.include?(k.to_sym)
       @attributes ||= {}
       process_attributes(attrs)
 
       unless attrs.key?('_id') || attrs.key?('id') ||
-             attrs.key?(:_id) || attrs.key?(:id)
+        attrs.key?(:_id) || attrs.key?(:id)
         self._id = BSON::ObjectId.new
       end
     end
@@ -136,6 +144,10 @@ module MyMongoid
       self.class.collection.insert(to_document)
       @is_new_record = false
       true
+    end
+
+    def changed_attributes
+      @changed_attributes
     end
   end
 end
